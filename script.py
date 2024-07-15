@@ -1,6 +1,6 @@
 import io
 import js
-from pypdf2 import PdfReader, PdfWriter
+from PyPDF2 import PdfReader, PdfWriter
 from pyodide.ffi import create_proxy
 
 def update_output(message):
