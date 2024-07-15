@@ -1,12 +1,16 @@
 console.log('PDF.js loaded:', typeof pdfjsLib !== 'undefined');
 console.log('PDF-lib loaded:', typeof PDFLib !== 'undefined');
+console.log('JSZip loaded:', typeof JSZip !== 'undefined');
 
 // PDF.jsのワーカーを設定
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.9.359/pdf.worker.min.js';
 
+let splitPDFs = []; // 分割されたPDFを保存する配列
+
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM fully loaded and parsed');
     document.getElementById('split-button').addEventListener('click', splitPDF);
+    document.getElementById('bulk-download-button').addEventListener('click', bulkDownload);
 });
 
 async function splitPDF() {
@@ -35,12 +39,15 @@ async function splitPDF() {
         const totalPages = pdfDoc.getPageCount();
         updateOutput(`総ページ数: ${totalPages}`);
 
+        splitPDFs = []; // リセット
+
         for (let i = 0; i < totalPages; i += 10) {
             const subDoc = await PDFLib.PDFDocument.create();
             const copiedPages = await subDoc.copyPages(pdfDoc, Array.from({length: Math.min(10, totalPages - i)}, (_, j) => i + j));
             copiedPages.forEach(page => subDoc.addPage(page));
 
             const pdfBytes = await subDoc.save();
+            splitPDFs.push({name: `split_${Math.floor(i / 10) + 1}.pdf`, data: pdfBytes});
             const blob = new Blob([pdfBytes], { type: 'application/pdf' });
             const url = URL.createObjectURL(blob);
             createDownloadLink(url, `split_${Math.floor(i / 10) + 1}.pdf`);
@@ -49,10 +56,24 @@ async function splitPDF() {
         }
 
         updateOutput("PDFの分割が完了しました。下のリンクからダウンロードしてください。");
+        document.getElementById('bulk-download-button').style.display = 'block';
     } catch (error) {
         console.error('Error during PDF processing:', error);
         updateOutput(`エラーが発生しました: ${error.message}`);
     }
+}
+
+async function bulkDownload() {
+    const zip = new JSZip();
+    splitPDFs.forEach(pdf => {
+        zip.file(pdf.name, pdf.data);
+    });
+    
+    const content = await zip.generateAsync({type: "blob"});
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(content);
+    link.download = "split_pdfs.zip";
+    link.click();
 }
 
 function updateOutput(message) {
