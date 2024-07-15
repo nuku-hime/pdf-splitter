@@ -28,6 +28,13 @@ async function splitPDF() {
         return;
     }
 
+    const pageCountInput = document.getElementById('page-count');
+    const pageCount = parseInt(pageCountInput.value, 10);
+    if (isNaN(pageCount) || pageCount < 1) {
+        updateOutput("無効なページ数です。1以上の数値を入力してください。");
+        return;
+    }
+
     updateOutput("PDFの分割を開始します...");
     try {
         const arrayBuffer = await file.arrayBuffer();
@@ -41,18 +48,18 @@ async function splitPDF() {
 
         splitPDFs = []; // リセット
 
-        for (let i = 0; i < totalPages; i += 10) {
+        for (let i = 0; i < totalPages; i += pageCount) {
             const subDoc = await PDFLib.PDFDocument.create();
-            const copiedPages = await subDoc.copyPages(pdfDoc, Array.from({length: Math.min(10, totalPages - i)}, (_, j) => i + j));
+            const copiedPages = await subDoc.copyPages(pdfDoc, Array.from({length: Math.min(pageCount, totalPages - i)}, (_, j) => i + j));
             copiedPages.forEach(page => subDoc.addPage(page));
 
             const pdfBytes = await subDoc.save();
-            splitPDFs.push({name: `split_${Math.floor(i / 10) + 1}.pdf`, data: pdfBytes});
+            splitPDFs.push({name: `split_${Math.floor(i / pageCount) + 1}.pdf`, data: pdfBytes});
             const blob = new Blob([pdfBytes], { type: 'application/pdf' });
             const url = URL.createObjectURL(blob);
-            createDownloadLink(url, `split_${Math.floor(i / 10) + 1}.pdf`);
+            createDownloadLink(url, `split_${Math.floor(i / pageCount) + 1}.pdf`);
 
-            updateProgress(Math.min(100, (i + 10) / totalPages * 100), `処理中... ${i + 1} / ${totalPages} ページ`);
+            updateProgress(Math.min(100, (i + pageCount) / totalPages * 100), `処理中... ${i + 1} / ${totalPages} ページ`);
         }
 
         updateOutput("PDFの分割が完了しました。下のリンクからダウンロードしてください。");
