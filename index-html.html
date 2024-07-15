@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDFスプリッター</title>
+    <script defer src="https://pyscript.net/latest/pyscript.js"></script>
+    <link rel="stylesheet" href="https://pyscript.net/latest/pyscript.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.9.359/pdf.min.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <h1>PDFスプリッター</h1>
+    <p>10ページごとにPDFファイルを分割します。</p>
+    <input type="file" id="file-input" accept=".pdf">
+    <button id="split-button" pys-onClick="split_pdf">PDFを分割</button>
+    <div id="progress-container" style="display: none;">
+        <div id="progress-bar">
+            <span id="progress-bar-fill" style="width: 0%;"></span>
+        </div>
+        <div id="progress-status"></div>
+    </div>
+    <div id="output"></div>
+    <div id="download-links"></div>
+
+    <script type="py-config">
+        {
+            "packages": ["pypdf2"]
+        }
+    </script>
+
+    <script type="py" src="script.py"></script>
+</body>
+</html>
+   
