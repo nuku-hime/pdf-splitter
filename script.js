@@ -1,9 +1,22 @@
+console.log('PDF.js loaded:', typeof pdfjsLib !== 'undefined');
+console.log('PDF-lib loaded:', typeof PDFLib !== 'undefined');
+
 // PDF.jsのワーカーを設定
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.9.359/pdf.worker.min.js';
 
-document.getElementById('split-button').addEventListener('click', splitPDF);
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM fully loaded and parsed');
+    document.getElementById('split-button').addEventListener('click', splitPDF);
+});
 
 async function splitPDF() {
+    console.log('splitPDF function called');
+    if (typeof PDFLib === 'undefined') {
+        console.error('PDFLib is not loaded');
+        updateOutput("PDFライブラリの読み込みに失敗しました。ページを再読み込みしてください。");
+        return;
+    }
+
     const fileInput = document.getElementById('file-input');
     const file = fileInput.files[0];
     if (!file) {
@@ -12,25 +25,32 @@ async function splitPDF() {
     }
 
     updateOutput("PDFの分割を開始します...");
-    const arrayBuffer = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
-    const totalPages = pdf.numPages;
-    updateOutput(`総ページ数: ${totalPages}`);
+    try {
+        const arrayBuffer = await file.arrayBuffer();
+        console.log('File loaded into ArrayBuffer');
+        const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+        console.log('PDF loaded');
+        const totalPages = pdf.numPages;
+        updateOutput(`総ページ数: ${totalPages}`);
 
-    for (let i = 1; i <= totalPages; i += 10) {
-        const pdfDoc = await PDFLib.PDFDocument.create();
-        const copiedPages = await pdfDoc.copyPages(pdf, Array.from({length: Math.min(10, totalPages - i + 1)}, (_, j) => i + j - 1));
-        copiedPages.forEach(page => pdfDoc.addPage(page));
+        for (let i = 1; i <= totalPages; i += 10) {
+            const pdfDoc = await PDFLib.PDFDocument.create();
+            const copiedPages = await pdfDoc.copyPages(pdf, Array.from({length: Math.min(10, totalPages - i + 1)}, (_, j) => i + j - 1));
+            copiedPages.forEach(page => pdfDoc.addPage(page));
 
-        const pdfBytes = await pdfDoc.save();
-        const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-        const url = URL.createObjectURL(blob);
-        createDownloadLink(url, `split_${Math.floor(i / 10) + 1}.pdf`);
+            const pdfBytes = await pdfDoc.save();
+            const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+            const url = URL.createObjectURL(blob);
+            createDownloadLink(url, `split_${Math.floor(i / 10) + 1}.pdf`);
 
-        updateProgress(Math.min(100, (i + 10) / totalPages * 100), `処理中... ${i} / ${totalPages} ページ`);
+            updateProgress(Math.min(100, (i + 10) / totalPages * 100), `処理中... ${i} / ${totalPages} ページ`);
+        }
+
+        updateOutput("PDFの分割が完了しました。下のリンクからダウンロードしてください。");
+    } catch (error) {
+        console.error('Error during PDF processing:', error);
+        updateOutput(`エラーが発生しました: ${error.message}`);
     }
-
-    updateOutput("PDFの分割が完了しました。下のリンクからダウンロードしてください。");
 }
 
 function updateOutput(message) {
