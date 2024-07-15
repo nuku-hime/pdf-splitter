@@ -28,22 +28,24 @@ async function splitPDF() {
     try {
         const arrayBuffer = await file.arrayBuffer();
         console.log('File loaded into ArrayBuffer');
-        const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+        
+        // PDF-libを使用してPDFを読み込む
+        const pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer);
         console.log('PDF loaded');
-        const totalPages = pdf.numPages;
+        const totalPages = pdfDoc.getPageCount();
         updateOutput(`総ページ数: ${totalPages}`);
 
-        for (let i = 1; i <= totalPages; i += 10) {
-            const pdfDoc = await PDFLib.PDFDocument.create();
-            const copiedPages = await pdfDoc.copyPages(pdf, Array.from({length: Math.min(10, totalPages - i + 1)}, (_, j) => i + j - 1));
-            copiedPages.forEach(page => pdfDoc.addPage(page));
+        for (let i = 0; i < totalPages; i += 10) {
+            const subDoc = await PDFLib.PDFDocument.create();
+            const copiedPages = await subDoc.copyPages(pdfDoc, Array.from({length: Math.min(10, totalPages - i)}, (_, j) => i + j));
+            copiedPages.forEach(page => subDoc.addPage(page));
 
-            const pdfBytes = await pdfDoc.save();
+            const pdfBytes = await subDoc.save();
             const blob = new Blob([pdfBytes], { type: 'application/pdf' });
             const url = URL.createObjectURL(blob);
             createDownloadLink(url, `split_${Math.floor(i / 10) + 1}.pdf`);
 
-            updateProgress(Math.min(100, (i + 10) / totalPages * 100), `処理中... ${i} / ${totalPages} ページ`);
+            updateProgress(Math.min(100, (i + 10) / totalPages * 100), `処理中... ${i + 1} / ${totalPages} ページ`);
         }
 
         updateOutput("PDFの分割が完了しました。下のリンクからダウンロードしてください。");
