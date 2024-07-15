@@ -62,7 +62,7 @@ async function splitPDF() {
             updateProgress(Math.min(100, (i + pageCount) / totalPages * 100), `処理中... ${i + 1} / ${totalPages} ページ`);
         }
 
-        updateOutput("PDFの分割が完了しました。下のリンクからダウンロードしてください。");
+        updateOutput(`PDFの分割が完了しました。${pageCount}ページごとに分割されています。下のリンクからダウンロードしてください。`);
         document.getElementById('bulk-download-button').style.display = 'block';
     } catch (error) {
         console.error('Error during PDF processing:', error);
